@@ -1,0 +1,74 @@
+version: "3.8"
+
+name: inception
+
+networks:
+  intra:
+    driver: bridge
+
+volumes:
+  wp_db_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${LOGIN}/data/mariadb
+  wp_site_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/${LOGIN}/data/wordpress
+
+secrets:
+  db_root_password:
+    file: ../secrets/db_root_password.txt
+  db_password:
+    file: ../secrets/db_password.txt
+  credentials:
+    file: ../secrets/credentials.txt
+
+services:
+  mariadb:
+    build: { context: ./requirements/mariadb }
+    image:  mariadb
+    container_name: mariadb
+    env_file: .env
+    environment:
+      - MARIADB_DATABASE=${MYSQL_DATABASE}
+      - MARIADB_USER=${MYSQL_USER}
+    secrets:  [db_root_password, db_password]
+    volumes:
+      - wp_db_data:/var/lib/mysql
+    networks: [intra]
+    restart:  on-failure
+  
+  wordpress:
+    build: { context: ./requirements/wordpress }
+    image: wordpress
+    container_name: wordpress
+    env_file: .env
+    environment:
+      - WP_URL=https://${DOMAIN_NAME}
+      - DB_HOST=mariadb
+      - DB_NAME=${MYSQL_DATABASE}
+      - DB_USER=${MYSQL_USER}
+    secrets: [db_password, credentials]
+    depends_on: [mariadb]
+    volumes:
+      - wp_site_data:/var/www/html
+    networks: [intra]
+    restart: on-failure
+
+  nginx:
+    build: { context: ./requirements/nginx }
+    image: nginx
+    container_name: nginx
+    env_file: .env
+    ports:
+      - "443:443"
+    depends_on: [wordpress]
+    volumes:
+      - wp_site_data:/var/www/html:ro
+    networks: [intra]
+    restart: on-failure

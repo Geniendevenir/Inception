@@ -1,42 +1,28 @@
 #!/bin/sh
-set -e
+set -eu
 
+# Get Secrets
+DB_ROOT_PASS="$(cat /run/secrets/db_root_password)"
+DB_PASS="$(cat /run/secrets/db_password)"
+
+# Create Dir / Set Permissions
+	# Temporary Socket
 mkdir -p /run/mysqld
-chown mysql:mysql /run/mysqld
+chown -R mysql:mysql /run/mysqld
+	# Database Files
+mkdir -p /var/lib/mysql
+chown -R mysql:mysql /var/lib/mysql
 
-# Utilise les variables d'environnement directement, exemple:
-echo "Creating DB $MYSQL_DATABASE and user $MYSQL_USER"
-
-if [ ! -d "/var/lib/mysql/mysql" ]; then
-  mariadb-install-db --user=mysql --datadir=/var/lib/mysql
-  mysqld --skip-networking --socket=/var/run/mysqld/mysqld.sock &
-  pid="$!"
-
-  until mysqladmin ping --socket=/var/run/mysqld/mysqld.sock --silent; do
-    sleep 1
-  done
-
-  # Remplacer les placeholders dans /tmp/init.sql
-  sed -i "s|MYSQL_DATABASE|$MYSQL_DATABASE|g" /tmp/init.sql
-  sed -i "s|MYSQL_USER|$MYSQL_USER|g" /tmp/init.sql
-  sed -i "s|MYSQL_PASSWORD|$MYSQL_PASSWORD|g" /tmp/init.sql
-  sed -i "s|MYSQL_ROOT_PASSWORD|$MYSQL_ROOT_PASSWORD|g" /tmp/init.sql
-
-  mysql < /tmp/init.sql
-
-  mysql <<EOF
-ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
-CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
-EOF
-
-  mysqladmin shutdown --socket=/var/run/mysqld/mysqld.sock
-  wait $pid
-  echo "Database initialized."
-else
-  echo "Database already exists."
-fi
+wait_for_socket() {
+	for i in $(seq 1 60); do
+		if mysqladmin --socket=/var/run/mysqld/mysqld.sock pring >/dev/null 2>&1; then
+			return 0
+		fi
+		sleep 1
+	done
+	echo "Timed out waiting for mysqld socket" >&2
+	return 1
+}
 
 
-exec mariadbd --user=mysql --console
+

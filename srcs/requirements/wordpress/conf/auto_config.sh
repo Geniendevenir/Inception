@@ -22,7 +22,7 @@ else
 		--title="$WP_TITLE" \
 		--admin_user="$WP_USER" \
 		--admin_password="$WP_PASSWORD" \
-		--admin_email="$WP_EMAIL" \
+		--admin_email="$WP_ADMIN_EMAIL" \
 		--skip-email \
 		--allow-root
 fi

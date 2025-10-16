@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-# ---- Map env + secrets to consistent variables ----
+# Map env + secrets to consistent variables
 DB_HOST="${DB_HOST:-mariadb}"                # set in compose environment
 DB_NAME="${MYSQL_DATABASE:?missing}"
 DB_USER="${MYSQL_USER:?missing}"
@@ -11,7 +11,6 @@ SITE_URL="https://${DOMAIN_NAME:?missing}"   # from .env
 SITE_TITLE="${WP_DEFAULT_TITLE:-My 42 Inception}"
 ADMIN_USER="${WP_ADMIN_USER:?missing}"
 ADMIN_EMAIL="${WP_ADMIN_EMAIL:?missing}"
-# admin password is in secrets/credentials.txt as WP_ADMIN_PASSWORD=...
 ADMIN_PASS="$(awk -F= '$1=="WP_ADMIN_PASSWORD"{print $2}' /run/secrets/credentials)"
 
 WEBROOT="/var/www/html"

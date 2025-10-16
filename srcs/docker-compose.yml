@@ -7,13 +7,13 @@ networks:
     driver: bridge
 
 volumes:
-  wp_db_data:
+  mariadb:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /home/${LOGIN}/data/mariadb
-  wp_site_data:
+  wordpress:
     driver: local
     driver_opts:
       type: none
@@ -39,7 +39,7 @@ services:
       - MARIADB_USER=${MYSQL_USER}
     secrets:  [db_root_password, db_password]
     volumes:
-      - wp_db_data:/var/lib/mysql
+      - mariadb:/var/lib/mysql
     networks: [intra]
     restart:  on-failure
   
@@ -56,7 +56,7 @@ services:
     secrets: [db_password, credentials]
     depends_on: [mariadb]
     volumes:
-      - wp_site_data:/var/www/html
+      - wordpress:/var/www/html
     networks: [intra]
     restart: on-failure
 
@@ -69,6 +69,6 @@ services:
       - "443:443"
     depends_on: [wordpress]
     volumes:
-      - wp_site_data:/var/www/html:ro
+      - wordpress:/var/www/html:ro
     networks: [intra]
     restart: on-failure

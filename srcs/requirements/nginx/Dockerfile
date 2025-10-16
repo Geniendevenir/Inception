@@ -1,9 +1,7 @@
 FROM debian:bookworm
 
 RUN apt-get update -y
-RUN apt-get upgrade -y
 RUN apt-get install -y nginx
-RUN apt-get install -y vim
 RUN apt-get install -y curl 
 RUN mkdir -p /etc/nginx/ssl
 RUN apt-get install -y openssl

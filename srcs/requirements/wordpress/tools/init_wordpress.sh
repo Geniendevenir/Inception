@@ -1,7 +1,8 @@
 #!/bin/bash
 
 DB_PASSWORD="$(cat /run/secrets/db_password)"
-WP_ADMIN_PASSWORD="$(cat /run/secrets/db_root_password):
+WP_ADMIN_PASSWORD="$(cat /run/secrets/admin_user_password)"
+WP_USER_PASSWORD="$(cat /run/secrets/user_password)"
 
 # Check if WordPress is already installed
 if [ ! -f /var/www/html/wordpress/wp-config.php ]; then

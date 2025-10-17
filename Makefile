@@ -36,7 +36,10 @@ clean:
 
 fclean: down
 	@echo "Removing data directories (Will erase data)"
-	rm -rf $(DATA_DIR) $(WP_DIR)
+	sudo rm -rf /home/adebert/data/mariadb /home/adebert/data/wordpress
+	@echo "Data directories emptied."
+	$(COMPOSE) down --volumes --rmi local	
+
 
 re: fclean up
 

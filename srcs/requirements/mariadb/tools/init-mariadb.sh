@@ -9,8 +9,9 @@ DATADIR="/var/lib/mysql"
 SOCKET="/run/mysqld/mysqld.sock"
 
 # Secrets (files mounted via docker secrets)
-DB_ROOT_PASS="$(cat /run/secrets/db_root_password)"
-DB_PASS="$(cat /run/secrets/db_password)"
+DB_ADMIN_PASSWORD="$(cat /run/secrets/db_root_password)"
+DB_PASSWORD="$(cat /run/secrets/db_password)"
+DB_USERNAME="${DB_USERNAME}"
 
 # Create runtime dirs / ownership
 mkdir -p "$(dirname "$SOCKET")"
@@ -31,12 +32,21 @@ wait_for_socket() {
   return 1
 }
 
-# First-run check
-if [ ! -d "$DATADIR/mysql" ]; then
+# Check if we need to initialize - look for a marker file instead of mysql dir
+INIT_MARKER="$DATADIR/.initialized"
+
+if [ ! -f "$INIT_MARKER" ]; then
   echo "Initializing fresh MariaDB datadir..."
+  
+  # Clean up any partial/corrupted data
+  if [ -d "$DATADIR/mysql" ]; then
+    echo "Removing corrupted/partial datadir..."
+    rm -rf "$DATADIR"/*
+  fi
+  
   mariadb-install-db --user=mysql --datadir="$DATADIR"
 
-  # Start temporary server (socket-only, no TCP) — IPC, not TCP
+  # Start temporary server (socket-only, no TCP) – IPC, not TCP
   mysqld --skip-networking --socket="$SOCKET" --datadir="$DATADIR" --user=mysql &
   pid="$!"
   trap 'kill "$pid" 2>/dev/null || true' EXIT
@@ -45,33 +55,23 @@ if [ ! -d "$DATADIR/mysql" ]; then
 
   # Creates the Wordpress Database, sets the two users (Root + User), sets their password and their rights
   echo "Securing root and creating database/user..."
-  mysql --protocol=socket --socket="$SOCKET" <<SQL
--- Set a password for the local root account (no remote root account is created)
-ALTER USER 'root'@'localhost' IDENTIFIED BY '${DB_ROOT_PASS}';
+  mysql --socket="$SOCKET" -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${DB_ADMIN_PASSWORD}'; FLUSH PRIVILEGES;" && \
+  mysql --socket="$SOCKET" -uroot -p${DB_ADMIN_PASSWORD} -e "CREATE DATABASE IF NOT EXISTS wordpress; \
+        CREATE USER IF NOT EXISTS '${DB_USERNAME}'@'%' IDENTIFIED BY '${DB_PASSWORD}'; \
+        GRANT ALL PRIVILEGES ON wordpress.* TO '${DB_USERNAME}'@'%'; \
+        FLUSH PRIVILEGES;" && \
+  mysqladmin --socket="$SOCKET" -u root -p${DB_ADMIN_PASSWORD} shutdown
 
--- Create the application database if it doesn't already exist
-CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
-
--- Create the application user (host-scoped to the Docker network as needed)
-CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
-
--- Grant only the privileges WordPress needs on its own database (no global privileges, no GRANT OPTION)
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, DROP
-  ON \`${MYSQL_DATABASE}\`.*
-  TO '${MYSQL_USER}'@'%';
-
--- Apply privilege changes
-FLUSH PRIVILEGES;
-SQL
-  # Clean shutdown of the temp server
-  mysqladmin --protocol=socket --socket="$SOCKET" -uroot -p"$DB_ROOT_PASS" shutdown
   wait "$pid"
   trap - EXIT
+  
+  # Create marker file to indicate successful initialization
+  touch "$INIT_MARKER"
+  chown mysql:mysql "$INIT_MARKER"
+  
   echo "Database Initialized."
 else
-  echo "Existing MariaDB datadir detected — skipping init."
+  echo "MariaDB already initialized – skipping init."
 fi
 
 # Run real server in foreground (PID 1)

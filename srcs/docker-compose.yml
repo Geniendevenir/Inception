@@ -35,9 +35,9 @@ services:
     container_name: mariadb
     env_file: .env
     environment:
-      - MARIADB_DATABASE=${MYSQL_DATABASE}
-      - MARIADB_USER=${MYSQL_USER}
-    secrets:  [db_root_password, db_password]
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+    secrets:  [db_root_password, db_password, admin_user_password, user_password]
     volumes:
       - mariadb:/var/lib/mysql
     networks: [intra]
@@ -49,19 +49,19 @@ services:
     container_name: wordpress
     env_file: .env
     environment:
-      - DB_NAME=${MYSQL_DATABASE}
-      - DB_USER=${MYSQL_USER}
-      - DOMAIN_NAME=${DOMAIN_NAME}
-      - WP_TITLE=${WP_TITLE}
-      - WP_ADMIN_USER=${WP_ADMIN_USER}
-      - WP_ADMIN_EMAIL=${WP_ADMIN_EMAIL}
-      - WP_USER_USERNAME=${WP_USER_USERNAME}
-      - WP_USER_MAIL=${WP_USER_MAIL}
-      - WP_USER_DISPLAY_NAME=${WP_USER_DISPLAY_NAME}
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DOMAIN_NAME: ${DOMAIN_NAME}
+      WP_TITLE: ${WP_TITLE}
+      WP_ADMIN_USER_USERNAME: ${WP_ADMIN_USER_USERNAME}
+      WP_ADMIN_MAIL: ${WP_ADMIN_MAIL}
+      WP_USER_USERNAME: ${WP_USER_USERNAME}
+      WP_USER_MAIL: ${WP_USER_MAIL}
+      WP_USER_DISPLAY_NAME: ${WP_USER_DISPLAY_NAME}
     secrets: [db_password, admin_user_password, user_password]
     depends_on: [mariadb]
     volumes:
-      - wordpress:/var/www/html/wordpress
+      - wordpress:/var/www/wordpress
     networks: [intra]
     restart: on-failure
 
@@ -74,6 +74,6 @@ services:
       - "443:443"
     depends_on: [wordpress]
     volumes:
-      - wordpress:/var/www/html/wordpress
+      - wordpress:/var/www/wordpress
     networks: [intra]
     restart: on-failure

@@ -2,7 +2,7 @@ FROM debian:bookworm
 
 RUN apt-get update -y
 RUN apt-get install -y mariadb-server
-COPY conf/mariadb.conf /etc/mysql/mariadb.conf.d/mariadb.conf
+COPY conf/mariadb.cnf /etc/mysql/mariadb.conf.d/mariadb.cnf
 
 # add and exec script mariadb installation
 COPY tools/init-mariadb.sh /tmp/init-mariadb.sh

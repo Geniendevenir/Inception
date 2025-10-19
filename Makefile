@@ -1,5 +1,5 @@
 COMPOSE := docker compose -f srcs/docker-compose.yml --env-file srcs/.env
-DATA_DIR := /home/adebert/data
+DATA_DIR := /home/allan/data
 DB_DIR := $(DATA_DIR)/mariadb
 WP_DIR := $(DATA_DIR)/wordpress
 
@@ -36,7 +36,7 @@ clean:
 
 fclean: down
 	@echo "Removing data directories (Will erase data)"
-	sudo rm -rf /home/adebert/data/mariadb /home/adebert/data/wordpress
+	sudo rm -rf /home/allan/data/mariadb /home/allan/data/wordpress
 	@echo "Data directories emptied."
 	$(COMPOSE) down --volumes --rmi local	
 

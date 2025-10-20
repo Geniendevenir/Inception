@@ -10,7 +10,7 @@ RUN rm -rf /etc/nginx/sites-available/*
 
 RUN mkdir -p /etc/nginx/ssl
 RUN apt-get install -y openssl
-RUN openssl req -x509 -nodes -out /etc/nginx/ssl/allan.crt -keyout /etc/nginx/ssl/allan.key -subj "/C=FR/ST=Paris/L=Paris/O=42 School/OU=allan/CN=allan.42.fr/"
+RUN openssl req -x509 -nodes -out /etc/nginx/ssl/adebert.crt -keyout /etc/nginx/ssl/adebert.key -subj "/C=FR/ST=Paris/L=Paris/O=42 School/OU=adebert/CN=adebert.42.fr/"
 RUN mkdir -p /var/run/nginx
 COPY conf/nginx.conf /etc/nginx/conf.d/nginx.conf
 
